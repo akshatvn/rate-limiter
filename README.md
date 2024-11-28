@@ -23,59 +23,6 @@ This repository implements a **Sliding Log Rate Limiter** using Go and Redis. Th
 - **Go 1.18+**
 - **Redis 6.0+**
 
-## Installation
-
-1. Clone the repository:
-    
-    ```bash
-    git clone https://github.com/<your-username>/sliding-log-rate-limiter.git
-    cd sliding-log-rate-limiter
-    ```
-    
-2. Install dependencies:
-    
-    ```bash
-    go mod tidy
-    ```
-    
-3. Ensure Redis is running and accessible.
-
-## Configuration
-
-Set the following environment variables or modify the configuration file:
-
-- `REDIS_ADDR`: Redis server address (default: `localhost:6379`)
-- `REDIS_PASSWORD`: Redis password (if required)
-- `RATE_LIMIT`: Maximum requests allowed in the window (e.g., `100`)
-- `WINDOW_SIZE`: Rate limit window size in seconds (e.g., `1`)
-
-## Usage
-
-1. Start the rate limiter:
-    
-    ```bash
-    go run main.go
-    ```
-    
-2. Use the following Lua script in Redis for the atomic rate limiting logic. The script is located in `scripts/ratelimiter.lua`:
-    
-    ```lua
-    local pgname = KEYS[1]
-    local now = tonumber(ARGV[1])
-    local window = tonumber(ARGV[2])
-    local limit = tonumber(ARGV[3])
-    local clearBefore = now - window
-    redis.call('ZREMRANGEBYSCORE', pgname, 0, clearBefore)
-    local amount = redis.call('ZCARD', pgname)
-    if amount < limit then
-        redis.call('ZADD', pgname, now, now)
-    end
-    redis.call('EXPIRE', pgname, window)
-    return limit - amount
-    ```
-    
-3. Integrate the rate limiter into your application by invoking the `CheckRateLimit` function with parameters for the payment gateway, current time, and configuration.
-
 ## Benchmarking
 
 Benchmark the rate limiter to test its throughput:
@@ -85,7 +32,6 @@ go test -bench=.
 ```
 
 Sample results (local setup):
-
 - Avg operation time: **55.37 μs**
 - Throughput: **~18,000 requests/sec**
 
